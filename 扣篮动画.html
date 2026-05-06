@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏀 詹姆斯扣篮</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: linear-gradient(to bottom, #1a0533 0%, #2d1b69 30%, #c0392b 50%, #1a1a2e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .scene {
+    position: relative;
+    width: 800px;
+    height: 600px;
+  }
+
+  /* ── 球场地面 ── */
+  .court {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 140px;
+    background: linear-gradient(to bottom, #c0392b 0%, #8b0000 100%);
+    border-radius: 0 0 10px 10px;
+  }
+
+  .court-line {
+    position: absolute;
+    top: 50%;
+    left: 10%; right: 10%;
+    height: 3px;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .court-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px; height: 100px;
+    border: 3px solid rgba(255,255,255,0.4);
+    border-radius: 50%;
+  }
+
+  /* ── 篮架 ── */
+  .hoop-pole {
+    position: absolute;
+    bottom: 120px;
+    right: 100px;
+    width: 10px;
+    height: 260px;
+    background: linear-gradient(to right, #888, #ccc, #888);
+    border-radius: 5px;
+    z-index: 5;
+  }
+
+  .hoop-arm {
+    position: absolute;
+    bottom: 370px;
+    right: 70px;
+    width: 120px;
+    height: 8px;
+    background: #999;
+    border-radius: 4px;
+    z-index: 5;
+  }
+
+  .backboard {
+    position: absolute;
+    bottom: 320px;
+    right: 55px;
+    width: 140px;
+    height: 90px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+    border: 3px solid #333;
+    border-radius: 5px;
+    z-index: 5;
+  }
+
+  .backboard-inner {
+    position: absolute;
+    top: 8px; left: 8px; right: 8px; bottom: 8px;
+    border: 2px solid #e74c3c;
+    border-radius: 3px;
+  }
+
+  .rim {
+    position: absolute;
+    bottom: 322px;
+    right: 0;
+    width: 45px;
+    height: 10px;
+    border: 3px solid #e74c3c;
+    border-radius: 5px;
+    z-index: 6;
+    transform: rotate(-5deg);
+    transform-origin: left center;
+    transition: transform 0.1s;
+  }
+
+  .rim.shake {
+    animation: rimShake 0.4s ease-in-out;
+  }
+
+  @keyframes rimShake {
+    0%,100% { transform: rotate(-5deg); }
+    25%  { transform: rotate(-12deg); }
+    50%  { transform: rotate(0deg); }
+    75%  { transform: rotate(-18deg); }
+  }
+
+  .net {
+    position: absolute;
+    bottom: 270px;
+    right: 5px;
+    width: 30px;
+    height: 50px;
+    border-left: 2px dashed rgba(255,255,255,0.3);
+    border-right: 2px dashed rgba(255,255,255,0.3);
+    z-index: 4;
+    clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+    background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  }
+
+  /* ── 球员 ── */
+  .player {
+    position: absolute;
+    bottom: 120px;
+    left: 50px;
+    z-index: 10;
+    transition: none;
+  }
+
+  .player.dunking {
+    animation: dunkFlight 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
+
+  @keyframes dunkFlight {
+    0%   { left: 50px;  bottom: 120px; transform: scale(1); }
+    15%  { left: 150px; bottom: 180px; transform: scale(1.1); }
+    30%  { left: 280px; bottom: 320px; transform: scale(1.2); }
+    45%  { left: 400px; bottom: 380px; transform: scale(1.15); }
+    55%  { left: 450px; bottom: 360px; transform: scale(1.1); }
+    65%  { left: 490px; bottom: 300px; transform: scale(1); }
+    80%  { left: 420px; bottom: 160px; transform: scale(0.95); }
+    100% { left: 300px; bottom: 120px; transform: scale(1); }
+  }
+
+  .player-body {
+    position: relative;
+  }
+
+  .head {
+    width: 40px; height: 42px;
+    background: #6b3a2a;
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative;
+    border: 2px solid #4a2518;
+  }
+
+  .beard {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 18px;
+    background: #333;
+    border-radius: 0 0 15px 15px;
+  }
+
+  .headband {
+    position: absolute;
+    top: 6px;
+    left: -2px;
+    right: -2px;
+    height: 6px;
+    background: #e74c3c;
+    border-radius: 3px;
+  }
+
+  .torso {
+    width: 44px; height: 50px;
+    background: #e74c3c;
+    margin: -4px auto 0;
+    border-radius: 8px 8px 4px 4px;
+    position: relative;
+  }
+
+  .jersey-number {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffd700;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .arm {
+    position: absolute;
+    width: 16px;
+    height: 45px;
+    background: #6b3a2a;
+    border-radius: 8px;
+    transform-origin: top center;
+  }
+
+  .arm.left {
+    top: 42px; left: -12px;
+    transform: rotate(-20deg);
+    transition: transform 0.3s;
+  }
+
+  .arm.right {
+    top: 42px; right: -12px;
+    transform: rotate(30deg);
+    transition: transform 0.3s;
+  }
+
+  .player.dunking .arm.right {
+    transform: rotate(-140deg);
+  }
+
+  .player.dunking .arm.left {
+    transform: rotate(-60deg);
+  }
+
+  .legs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: -2px;
+  }
+
+  .leg {
+    width: 16px; height: 50px;
+    background: #333;
+    border-radius: 6px 6px 5px 5px;
+    transform-origin: top center;
+    transition: transform 0.3s;
+  }
+
+  .player.dunking .leg {
+    transform: rotate(25deg);
+  }
+
+  .player.dunking .leg + .leg {
+    transform: rotate(-15deg);
+  }
+
+  .shoe {
+    width: 22px; height: 12px;
+    background: #ffd700;
+    border-radius: 8px 3px 3px 3px;
+    margin-top: -2px;
+    margin-left: -3px;
+  }
+
+  /* ── 篮球 ── */
+  .basketball {
+    position: absolute;
+    width: 30px; height: 30px;
+    background: #f39c12;
+    border-radius: 50%;
+    z-index: 20;
+    bottom: 180px;
+    left: 80px;
+    opacity: 0;
+    transition: none;
+  }
+
+  .basketball.flying {
+    animation: ballFlight 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
+
+  @keyframes ballFlight {
+    0%   { opacity: 1; left: 80px;  bottom: 180px; }
+    25%  { opacity: 1; left: 220px; bottom: 320px; }
+    50%  { opacity: 1; left: 400px; bottom: 400px; }
+    65%  { opacity: 1; left: 490px; bottom: 360px; }
+    80%  { opacity: 1; left: 510px; bottom: 310px; }
+    100% { opacity: 1; left: 510px; bottom: 272px; }
+  }
+
+  .ball-lines {
+    position: absolute;
+    top: 50%; left: 4px; right: 4px;
+    height: 2px;
+    background: #c0750b;
+    transform: translateY(-50%);
+  }
+
+  .ball-lines.vert {
+    transform: translateY(-50%) rotate(90deg);
+  }
+
+  /* ── 标题 ── */
+  .title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffd700;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5), 2px 2px 4px rgba(0,0,0,0.8);
+    z-index: 50;
+    letter-spacing: 4px;
+  }
+
+  .subtitle {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    z-index: 50;
+  }
+
+  /* ── 聚光灯 ── */
+  .spotlight {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,200,0.15), transparent 70%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ── 粒子 ── */
+  .spark {
+    position: absolute;
+    pointer-events: none;
+    font-size: 20px;
+    z-index: 30;
+    animation: sparkFly 1s ease-out forwards;
+  }
+
+  @keyframes sparkFly {
+    0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+
+  /* ── 分数弹出 ── */
+  .score-pop {
+    position: absolute;
+    top: 150px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 80px;
+    font-weight: bold;
+    color: #ffd700;
+    z-index: 60;
+    text-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.4);
+    animation: scoreAppear 2s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes scoreAppear {
+    0%   { opacity: 0; transform: translateX(-50%) scale(0.3); }
+    20%  { opacity: 1; transform: translateX(-50%) scale(1.3); }
+    30%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    80%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1.5) translateY(-30px); }
+  }
+
+  /* ── 提示 ── */
+  .hint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    z-index: 50;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 0.4; }
+    50%    { opacity: 1; }
+  }
+
+  /* ── 观众席 ── */
+  .crowd {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 90px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    padding: 10px 30px;
+    opacity: 0.5;
+  }
+
+  .fan {
+    font-size: 18px;
+    animation: cheer 0.3s ease-in-out infinite;
+  }
+  .fan:nth-child(odd) { animation-delay: 0.15s; }
+
+  @keyframes cheer {
+    0%,100% { transform: translateY(0); }
+    50%    { transform: translateY(-4px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="scene" id="scene">
+  <div class="title">🏆 勒布朗·詹姆斯</div>
+  <div class="subtitle">KING JAMES · 战斧扣篮</div>
+
+  <!-- 观众 -->
+  <div class="crowd" id="crowd"></div>
+
+  <!-- 聚光灯 -->
+  <div class="spotlight"></div>
+
+  <!-- 篮架 -->
+  <div class="hoop-pole"></div>
+  <div class="hoop-arm"></div>
+  <div class="backboard"><div class="backboard-inner"></div></div>
+  <div class="rim" id="rim"></div>
+  <div class="net"></div>
+
+  <!-- 篮球 -->
+  <div class="basketball" id="ball">
+    <div class="ball-lines"></div>
+    <div class="ball-lines vert"></div>
+  </div>
+
+  <!-- 球员 -->
+  <div class="player" id="player">
+    <div class="player-body">
+      <div class="head">
+        <div class="headband"></div>
+        <div class="beard"></div>
+      </div>
+      <div class="torso">
+        <div class="jersey-number">23</div>
+        <div class="arm left"></div>
+        <div class="arm right"></div>
+      </div>
+      <div class="legs">
+        <div class="leg"><div class="shoe"></div></div>
+        <div class="leg"><div class="shoe"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 球场 -->
+  <div class="court">
+    <div class="court-line"></div>
+    <div class="court-circle"></div>
+  </div>
+
+  <div class="hint" id="hint">👆 点击画面 观看扣篮</div>
+</div>
+
+<script>
+  const player    = document.getElementById('player');
+  const ball      = document.getElementById('ball');
+  const rim       = document.getElementById('rim');
+  const hint      = document.getElementById('hint');
+  const scene     = document.getElementById('scene');
+  const crowd     = document.getElementById('crowd');
+
+  let animating = false;
+
+  // 生成观众
+  const fanEmojis = ['🧑', '👨', '👩', '🧑‍🦱', '👨‍🦰', '👩‍🦳', '🙋', '🙆', '👏'];
+  for (let i = 0; i < 36; i++) {
+    const fan = document.createElement('span');
+    fan.className = 'fan';
+    fan.textContent = fanEmojis[Math.floor(Math.random() * fanEmojis.length)];
+    crowd.appendChild(fan);
+  }
+
+  function spawnSparks(x, y) {
+    const emojis = ['💥', '⚡', '🔥', '💫', '✨', '🏀', '👑'];
+    for (let i = 0; i < 12; i++) {
+      const el = document.createElement('span');
+      el.className = 'spark';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      el.style.setProperty('--dx', (Math.random() * 200 - 100) + 'px');
+      el.style.setProperty('--dy', (Math.random() * -180 - 40) + 'px');
+      el.style.animationDelay = Math.random() * 0.2 + 's';
+      scene.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
+    }
+  }
+
+  function showScore() {
+    const el = document.createElement('div');
+    el.className = 'score-pop';
+    el.textContent = '+2';
+    scene.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+
+  function dunk() {
+    if (animating) return;
+    animating = true;
+    hint.style.opacity = '0';
+
+    // 重置
+    player.classList.remove('dunking');
+    ball.classList.remove('flying');
+    void player.offsetWidth;
+
+    // 起跳
+    player.classList.add('dunking');
+    ball.classList.add('flying');
+
+    // 篮筐震动
+    setTimeout(() => {
+      rim.classList.remove('shake');
+      void rim.offsetWidth;
+      rim.classList.add('shake');
+      spawnSparks(570, 280);
+      showScore();
+    }, 780);
+
+    // 动画结束
+    setTimeout(() => {
+      player.classList.remove('dunking');
+      ball.classList.remove('flying');
+      animating = false;
+      hint.style.opacity = '1';
+    }, 1300);
+  }
+
+  scene.addEventListener('click', dunk);
+
+  // 按空格键也可以
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); dunk(); }
+  });
+
+  // 页面加载后自动演示一次
+  setTimeout(dunk, 800);
+</script>
+</body>
+</html>

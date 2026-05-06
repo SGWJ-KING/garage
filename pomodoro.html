@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>番茄钟 - Pomodoro Timer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    user-select: none;
+    overflow: hidden;
+  }
+
+  .container {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── 番茄园 ── */
+  .tomato-garden {
+    position: relative;
+    height: 180px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 20px;
+  }
+
+  .tomato {
+    font-size: 48px;
+    position: relative;
+    animation: none;
+    cursor: default;
+    transition: transform 0.2s;
+  }
+
+  .tomato.jumping {
+    animation: jump 0.6s ease-in-out;
+  }
+
+  .tomato.dancing {
+    animation: dance 0.8s ease-in-out infinite;
+  }
+
+  .tomato.bouncing {
+    animation: bounce 0.5s ease-in-out infinite;
+  }
+
+  .tomato:nth-child(1) { animation-delay: 0s; }
+  .tomato:nth-child(2) { animation-delay: 0.1s; }
+  .tomato:nth-child(3) { animation-delay: 0.2s; }
+  .tomato:nth-child(4) { animation-delay: 0.3s; }
+  .tomato:nth-child(5) { animation-delay: 0.4s; }
+  .tomato:nth-child(6) { animation-delay: 0.15s; }
+  .tomato:nth-child(7) { animation-delay: 0.25s; }
+
+  @keyframes jump {
+    0%, 100% { transform: translateY(0) scale(1); }
+    20%  { transform: translateY(-60px) scale(1.15); }
+    40%  { transform: translateY(-80px) scale(1.25); }
+    50%  { transform: translateY(-85px) scale(1.3); }
+    60%  { transform: translateY(-80px) scale(1.25); }
+    80%  { transform: translateY(-30px) scale(1.05); }
+  }
+
+  @keyframes dance {
+    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+    15%  { transform: translateY(-40px) rotate(-10deg) scale(1.1); }
+    30%  { transform: translateY(-55px) rotate(5deg) scale(1.2); }
+    45%  { transform: translateY(-60px) rotate(-5deg) scale(1.25); }
+    60%  { transform: translateY(-40px) rotate(3deg) scale(1.15); }
+    75%  { transform: translateY(-15px) rotate(-3deg) scale(1.05); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) scale(1, 1); }
+    30%  { transform: translateY(-50px) scale(1.05, 0.95); }
+    50%  { transform: translateY(-70px) scale(1.1, 0.9); }
+    70%  { transform: translateY(-30px) scale(1.02, 0.98); }
+  }
+
+  /* ── 计时器 ── */
+  .timer-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 40px 60px;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  }
+
+  .time-display {
+    font-size: 120px;
+    font-weight: 200;
+    color: #fff;
+    letter-spacing: 8px;
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    text-shadow: 0 0 40px rgba(231, 76, 60, 0.4);
+    transition: color 0.5s;
+  }
+
+  .time-display.break-mode {
+    text-shadow: 0 0 40px rgba(46, 204, 113, 0.4);
+  }
+
+  .session-count {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  /* ── 模式切换 ── */
+  .mode-switcher {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 30px;
+  }
+
+  .mode-btn {
+    padding: 12px 28px;
+    border-radius: 50px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+  }
+
+  .mode-btn:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .mode-btn.active {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+  }
+
+  .mode-btn.short-break.active {
+    background: #2ecc71;
+    border-color: #2ecc71;
+    box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+  }
+
+  .mode-btn.long-break.active {
+    background: #3498db;
+    border-color: #3498db;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+  }
+
+  /* ── 按钮 ── */
+  .controls {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .ctrl-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-start {
+    background: #e74c3c;
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  }
+  .btn-start:hover { transform: scale(1.1); box-shadow: 0 12px 30px rgba(231, 76, 60, 0.6); }
+  .btn-start.pause { background: #f39c12; box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5); }
+
+  .btn-reset {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+  .btn-reset:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
+
+  .btn-skip {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    font-size: 13px;
+    width: auto;
+    padding: 0 22px;
+    border-radius: 50px;
+  }
+  .btn-skip:hover { color: #fff; border-color: rgba(255, 255, 255, 0.5); }
+
+  /* ── 粒子效果 ── */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 24px;
+    animation: particleUp 1.5s ease-out forwards;
+    z-index: 100;
+  }
+
+  @keyframes particleUp {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(-200px) rotate(360deg) scale(0); }
+  }
+
+  /* ── 完成提示 ── */
+  .complete-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #e74c3c;
+    border-radius: 20px;
+    padding: 40px 60px;
+    color: #fff;
+    text-align: center;
+    z-index: 200;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .complete-overlay.show { transform: translate(-50%, -50%) scale(1); }
+
+  .complete-overlay h2 { font-size: 32px; margin-bottom: 10px; }
+  .complete-overlay p  { color: rgba(255, 255, 255, 0.6); margin-bottom: 20px; }
+  .complete-overlay button {
+    padding: 12px 30px;
+    border-radius: 50px;
+    border: none;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .complete-overlay button:hover { opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 番茄园 -->
+  <div class="tomato-garden" id="tomatoGarden">
+    <div class="tomato">🍅</div>
+    <div class="tomato" style="font-size:38px">🍅</div>
+    <div class="tomato" style="font-size:55px">🍅</div>
+    <div class="tomato" style="font-size:42px">🍅</div>
+    <div class="tomato" style="font-size:50px">🍅</div>
+    <div class="tomato" style="font-size:36px">🍅</div>
+    <div class="tomato" style="font-size:46px">🍅</div>
+  </div>
+
+  <!-- 计时器 -->
+  <div class="timer-card">
+    <div class="time-display" id="timeDisplay">25:00</div>
+    <div class="session-count" id="sessionCount">专注次数: 0</div>
+  </div>
+
+  <!-- 模式切换 -->
+  <div class="mode-switcher">
+    <button class="mode-btn active" data-mode="focus">🍅 专注</button>
+    <button class="mode-btn short-break" data-mode="shortBreak">☕ 短休息</button>
+    <button class="mode-btn long-break" data-mode="longBreak">🌴 长休息</button>
+  </div>
+
+  <!-- 控制按钮 -->
+  <div class="controls">
+    <button class="ctrl-btn btn-reset" id="btnReset" title="重置">↺</button>
+    <button class="ctrl-btn btn-start" id="btnStart" title="开始">▶</button>
+    <button class="ctrl-btn btn-skip" id="btnSkip" title="跳过">跳过</button>
+  </div>
+</div>
+
+<!-- 完成弹窗 -->
+<div class="complete-overlay" id="completeOverlay">
+  <h2 id="completeTitle">🍅 时间到！</h2>
+  <p id="completeMsg">专注完成，休息一下吧</p>
+  <button id="completeDismiss">知道了</button>
+</div>
+
+<script>
+  const MODES = {
+    focus:      { label: '专注', time: 25 * 60, emoji: '🍅' },
+    shortBreak: { label: '短休息', time: 5 * 60, emoji: '☕' },
+    longBreak:  { label: '长休息', time: 15 * 60, emoji: '🌴' }
+  };
+
+  let currentMode = 'focus';
+  let timeLeft   = MODES.focus.time;
+  let timerId    = null;
+  let isRunning  = false;
+  let focusCount = 0;
+
+  // ── DOM ──────────────────────────────────────────────────────────
+  const timeDisplay    = document.getElementById('timeDisplay');
+  const sessionCount   = document.getElementById('sessionCount');
+  const btnStart       = document.getElementById('btnStart');
+  const btnReset       = document.getElementById('btnReset');
+  const btnSkip        = document.getElementById('btnSkip');
+  const tomatoGarden   = document.getElementById('tomatoGarden');
+  const completeOverlay= document.getElementById('completeOverlay');
+  const completeTitle  = document.getElementById('completeTitle');
+  const completeMsg    = document.getElementById('completeMsg');
+  const modeBtns       = document.querySelectorAll('.mode-btn');
+  const tomatoes       = document.querySelectorAll('.tomato');
+
+  // ── 音频 ─────────────────────────────────────────────────────────
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+  function playBeep(freq = 800, duration = 0.15, type = 'sine') {
+    if (!AudioCtx) return;
+    try {
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch (_) { /* 静默处理 */ }
+  }
+
+  function playCompleteSound() {
+    [523, 659, 784, 1047].forEach((f, i) => {
+      setTimeout(() => playBeep(f, 0.3, 'triangle'), i * 150);
+    });
+  }
+
+  // ── 番茄动画 ─────────────────────────────────────────────────────
+  function makeTomatoesJump() {
+    tomatoes.forEach((t, i) => {
+      setTimeout(() => {
+        t.classList.remove('jumping');
+        void t.offsetWidth; // reflow
+        t.classList.add('jumping');
+      }, i * 80);
+    });
+  }
+
+  function startTomatoDance() {
+    tomatoes.forEach(t => { t.classList.remove('jumping'); t.classList.add('dancing'); });
+  }
+
+  function stopTomatoDance() {
+    tomatoes.forEach(t => t.classList.remove('dancing', 'bouncing'));
+  }
+
+  function tomatoBounce() {
+    tomatoes.forEach(t => { t.classList.remove('dancing'); t.classList.add('bouncing'); });
+  }
+
+  function spawnParticle(x, y) {
+    const emojis = ['🍅', '✨', '💫', '⭐', '🌟'];
+    const el = document.createElement('span');
+    el.className = 'particle';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+
+  // ── 计时逻辑 ─────────────────────────────────────────────────────
+  function updateDisplay() {
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    timeDisplay.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+
+    timeDisplay.classList.toggle('break-mode',
+      currentMode === 'shortBreak' || currentMode === 'longBreak');
+  }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    timeLeft = MODES[mode].time;
+    stopTimer();
+    updateDisplay();
+    stopTomatoDance();
+
+    modeBtns.forEach(b => {
+      b.classList.remove('active');
+      if (b.dataset.mode === mode) b.classList.add('active');
+    });
+
+    btnStart.textContent = '▶';
+    btnStart.classList.remove('pause');
+  }
+
+  function stopTimer() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    isRunning = false;
+  }
+
+  function startTimer() {
+    if (timerId) return; // already running
+    isRunning = true;
+    btnStart.textContent = '⏸';
+    btnStart.classList.add('pause');
+    startTomatoDance();
+
+    timerId = setInterval(() => {
+      timeLeft--;
+      updateDisplay();
+
+      // 最后10秒弹跳
+      if (timeLeft <= 10 && timeLeft > 0) {
+        tomatoBounce();
+        if (timeLeft <= 5) playBeep(600 + (5 - timeLeft) * 100, 0.1);
+      }
+
+      if (timeLeft <= 0) {
+        stopTimer();
+        stopTomatoDance();
+        playCompleteSound();
+        makeTomatoesJump();
+
+        // 撒粒子
+        for (let i = 0; i < 15; i++) {
+          setTimeout(() => {
+            spawnParticle(
+              Math.random() * window.innerWidth,
+              Math.random() * window.innerHeight * 0.6
+            );
+          }, i * 80);
+        }
+
+        btnStart.textContent = '▶';
+        btnStart.classList.remove('pause');
+        updateDisplay();
+
+        // 弹窗
+        if (currentMode === 'focus') {
+          focusCount++;
+          sessionCount.textContent = '专注次数: ' + focusCount;
+          completeTitle.textContent = '🍅 专注完成！';
+          completeMsg.textContent = '完成 ' + focusCount + ' 个番茄，休息一下吧~';
+          // 自动切到短休息
+          setTimeout(() => switchMode('shortBreak'), 2000);
+        } else if (currentMode === 'shortBreak') {
+          completeTitle.textContent = '☕ 休息结束！';
+          completeMsg.textContent = '准备开始下一个番茄';
+          setTimeout(() => switchMode('focus'), 2000);
+        } else {
+          completeTitle.textContent = '🌴 长休息结束！';
+          completeMsg.textContent = '精力充沛，开始新的循环吧';
+          setTimeout(() => switchMode('focus'), 2000);
+        }
+
+        completeOverlay.classList.add('show');
+        setTimeout(() => completeOverlay.classList.remove('show'), 3000);
+      }
+    }, 1000);
+  }
+
+  function toggleTimer() {
+    if (isRunning) {
+      stopTimer();
+      stopTomatoDance();
+      btnStart.textContent = '▶';
+      btnStart.classList.remove('pause');
+    } else {
+      startTimer();
+    }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    stopTomatoDance();
+    timeLeft = MODES[currentMode].time;
+    updateDisplay();
+    btnStart.textContent = '▶';
+    btnStart.classList.remove('pause');
+  }
+
+  function skipTimer() {
+    if (isRunning) {
+      stopTimer();
+      stopTomatoDance();
+    }
+    timeLeft = 0;
+    updateDisplay();
+    // 手动触发完成
+    if (currentMode === 'focus') {
+      focusCount++;
+      sessionCount.textContent = '专注次数: ' + focusCount;
+      switchMode('shortBreak');
+    } else {
+      switchMode('focus');
+    }
+    btnStart.textContent = '▶';
+    btnStart.classList.remove('pause');
+    makeTomatoesJump();
+  }
+
+  // ── 事件绑定 ─────────────────────────────────────────────────────
+  btnStart.addEventListener('click', toggleTimer);
+  btnReset.addEventListener('click', resetTimer);
+  btnSkip.addEventListener('click', skipTimer);
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+
+  document.getElementById('completeDismiss').addEventListener('click', () => {
+    completeOverlay.classList.remove('show');
+  });
+
+  // 番茄点击互动
+  tomatoes.forEach(t => {
+    t.addEventListener('click', (e) => {
+      t.classList.remove('jumping');
+      void t.offsetWidth;
+      t.classList.add('jumping');
+      spawnParticle(e.clientX, e.clientY);
+      playBeep(500 + Math.random() * 400, 0.1, 'sine');
+    });
+  });
+
+  // 空格键快速开始/暂停
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && e.target === document.body) {
+      e.preventDefault();
+      toggleTimer();
+    }
+    if (e.code === 'KeyR' && e.target === document.body) {
+      resetTimer();
+    }
+  });
+
+  // ── 初始化 ──────────────────────────────────────────────────────
+  updateDisplay();
+</script>
+</body>
+</html>
